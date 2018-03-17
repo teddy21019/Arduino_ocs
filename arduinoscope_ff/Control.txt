@@ -1,0 +1,8 @@
+Q:"true" for gate 1
+W:"true" for gate 2
+TAB: all pause
+UP: enter typed interval
+mousescroll:adjust interval
+ENTER: I don't know how it works but it somehow pauses the first scope. Not a nice feature wanted.
+
+Numberpad: when under input field, type in numbers to set the interval of the squarewave. Press UP afterwards
