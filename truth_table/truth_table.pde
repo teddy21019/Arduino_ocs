@@ -1,5 +1,7 @@
 /*
 Conbinations of 2^n for truth table
+ input here means the input of gate; ie the output of arduino
+ vice versa
  */
 import controlP5.*;
 import processing.serial.*;
@@ -9,20 +11,20 @@ import java.lang.Math;
 
 Arduino arduino;
 ControlP5 cp5;
-int N_i = 4;
-int N_o = 2;
+int N_i = 4;  //numbers of state of a truth table
+int N_o = 2;  // numbers of output of the gate
 Oscilloscope[] scopes = new Oscilloscope[N_i+N_o]; //number of channels
 Textfield int_text ;
 float multiplier;
 boolean keypause = false;
 boolean reset = true;
-int[] in_Pin = {8, 9, 10};// the pin number of the square wave generater
-int numPin = clkPin.length;
-int[] clkState = new int[numPin];
-long[] previousMillis = new long[numPin];
+int[] outPin;// the pin number of the square wave generater
+int[] inPin={8, 9, 10, 11 };  //must create by code;
+int[] clkState = new int[N_i];
+long[] previousMillis = new long[N_i];
 long interval = 3000;   // time interval (milliseconds) for squarewave generator
 long start_time = 0 ;
-
+boolean[][] truth_table = truthTable(N_i);
 
 void setup() {
   size(900, 730); //change cavuns
@@ -45,12 +47,10 @@ void setup() {
   }
   int[] dim = { width-130, height/scopes.length-10};//change channel height
 
-  for (int i=0; i<scopes.length; i++) {
+  for (int i=0; i<N_i+N_o; i++) {
     int[] posv = new int[2];
     posv[0]=0;
     posv[1]=dim[1]*i+30;//change channel position
-
-    // random color, that will look nice and be visible
     scopes[i] = new Oscilloscope(this, posv, dim);
     scopes[i].setLine_color(color((int)random(255), (int)random(127)+127, 255));
 
@@ -62,11 +62,14 @@ void setup() {
 
     scopes[i].setPause(false);
   }
-  for (int i=0; i<numPin; i++) {
+
+  //set initial arduino state to low
+  for (int i=0; i<N_i; i++) {
     clkState[i] = arduino.LOW;
   }
   // multiplier comes from 1st scope
-  multiplier = scopes[0].getMultiplier()/scopes[0].getResolution();
+  print(scopes[N_i].getMultiplier(), scopes[N_i].getResolution());
+  multiplier = scopes[N_i].getMultiplier()/scopes[N_i].getResolution();
 }
 
 void draw() {
@@ -78,6 +81,37 @@ void draw() {
 
   // Scope for input
   for (int i=0; i<N_i; i++) {
+    // UI
+    dim = scopes[i].getDim();
+    pos = scopes[i].getPos();
+    scopes[i].drawBounds();
+    stroke(127); 
+    strokeWeight(1);
+    line(0, pos[1]+8+dim[1], width, pos[1]+8+dim[1]);
+    strokeWeight(2); //make signal lines thicker
+
+    // value of input
+    if (arduino != null) {
+      boolean cur_state = truth_table[i][5];  //0 must be changed
+      if ( cur_state ==true) {
+        val = 1;
+        arduino.digitalWrite(inPin[i], arduino.HIGH);
+      } else { 
+        val = 0;   
+        arduino.digitalWrite(inPin[i], arduino.LOW);
+      }
+      val*=5.0;
+      scopes[i].addData(val); //<>//
+      scopes[i].draw();
+      textSize(20);
+      text("I" + i, dim[0]+10, pos[1]+40);
+      textSize(45);
+      text(round(val) + "V", dim[0]+10, pos[1] + 85);
+      textSize(12);
+    }
+  }//end of for
+  //value of output
+  for (int i=N_i; i<N_i+N_o; i++) {
     dim = scopes[i].getDim();
     pos = scopes[i].getPos();
     scopes[i].drawBounds();
@@ -87,12 +121,12 @@ void draw() {
     strokeWeight(2); //make signal lines thicker
 
     if (arduino != null) {
-      val = arduino.analogRead(i)*9/10;
+      val = arduino.analogRead(i-N_i)*9/10;
       scopes[i].addData(val);
       scopes[i].draw();
       val= val*10/9;
       textSize(20);
-      text("A" + i, dim[0]+10, pos[1]+40);
+      text("O" + i, dim[0]+10, pos[1]+40);
       textSize(45);
       text(round(val*multiplier) + "V", dim[0]+10, pos[1] + 85);
       //     text("min: " + (scopes[i].getMinval()*multiplier) + "V", dim[0]+10, pos[1] + 60);
@@ -107,8 +141,8 @@ void controlEvent(ControlEvent theEvent) {
   int val = int(theEvent.getValue());
   if (theEvent.getName() == "com") {
     arduino = new Arduino(this, Arduino.list()[val], 57600);
-    for (int i =0; i<numPin; i++) {
-      arduino.pinMode(clkPin[i], arduino.OUTPUT);
+    for (int i =0; i<N_i; i++) {
+      arduino.pinMode(inPin[i], arduino.OUTPUT);
     }
   } else {
     scopes[val].setPause(!scopes[val].isPause());
