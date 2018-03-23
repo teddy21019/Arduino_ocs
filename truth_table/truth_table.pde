@@ -21,13 +21,13 @@ boolean reset = true;
 int[] outPin;// the pin number of the square wave generater
 int[] inPin={8, 9, 10, 11 };  //must create by code;
 int[] clkState = new int[N_i];
-long[] previousMillis = new long[N_i];
-long interval = 3000;   // time interval (milliseconds) for squarewave generator
+long previousMillis;
+long interval = 600;   // time interval (milliseconds) for squarewave generator
 long start_time = 0 ;
 boolean[][] truth_table = truthTable(N_i);
 
 void setup() {
-  size(900, 730); //change cavuns
+  size(1300, 730); //change cavuns
   ControlP5 cp5 = new ControlP5(this);
   frame.setTitle("Arduinoscope");
 
@@ -68,7 +68,6 @@ void setup() {
     clkState[i] = arduino.LOW;
   }
   // multiplier comes from 1st scope
-  print(scopes[N_i].getMultiplier(), scopes[N_i].getResolution());
   multiplier = scopes[N_i].getMultiplier()/scopes[N_i].getResolution();
 }
 
@@ -78,7 +77,15 @@ void draw() {
   int val;
   int[] dim;
   int[] pos;
-
+  long time = millis();
+    if (arduino != null) {
+      if (reset==true) {
+          previousMillis=millis();
+        reset = false;
+      }
+    }
+  
+  
   // Scope for input
   for (int i=0; i<N_i; i++) {
     // UI
@@ -89,10 +96,10 @@ void draw() {
     strokeWeight(1);
     line(0, pos[1]+8+dim[1], width, pos[1]+8+dim[1]);
     strokeWeight(2); //make signal lines thicker
-
+    int count = (int)((time-previousMillis)/interval)%(int)Math.pow(2,N_i);
     // value of input
     if (arduino != null) {
-      boolean cur_state = truth_table[i][5];  //0 must be changed
+      boolean cur_state = truth_table[i][count];  //0 must be changed
       if ( cur_state ==true) {
         val = 1;
         arduino.digitalWrite(inPin[i], arduino.HIGH);
@@ -100,9 +107,10 @@ void draw() {
         val = 0;   
         arduino.digitalWrite(inPin[i], arduino.LOW);
       }
-      val*=5.0;
+      val*=900.0;
       scopes[i].addData(val); //<>//
       scopes[i].draw();
+      val/=(180);
       textSize(20);
       text("I" + i, dim[0]+10, pos[1]+40);
       textSize(45);
