@@ -20,7 +20,6 @@ int[] clkState = new int[numPin];
 long[] previousMillis = new long[numPin];
 long interval = 3000;   // time interval (milliseconds) for squarewave generator
 long start_time = 0 ;
-long[] www = {1,2,2};
 
 
 void setup() {
@@ -103,7 +102,7 @@ void draw() {
       textSize(12);
       for (int j=0; j<numPin; j++) {
         long currentMillis = Long.valueOf(millis());
-        if (currentMillis-previousMillis[j] >= interval*www[j]) {
+        if (currentMillis-previousMillis[j] >= interval) {
           previousMillis[j] = currentMillis;
           if (clkState[j]==arduino.LOW) {
             clkState[j]=arduino.HIGH;
